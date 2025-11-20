@@ -10,6 +10,25 @@ Remember, it's self-paced so feel free to take a break! ☕️
 
 [![](https://img.shields.io/badge/Go%20to%20Exercise-%E2%86%92-1f883d?style=for-the-badge&logo=github&labelColor=197935)](https://github.com/faizmodisweng/skills-integrate-mcp-with-copilot/issues/1)
 
+## 📋 Creating Issues from ISSUES_TO_CREATE.md
+
+This repository includes tools to automatically create GitHub issues from the `ISSUES_TO_CREATE.md` file. See **[HOW_TO_CREATE_ISSUES.md](HOW_TO_CREATE_ISSUES.md)** for detailed instructions.
+
+**Quick start:**
+```bash
+# Preview issues (dry-run)
+python create_issues.py --token YOUR_TOKEN --repo faizmodisweng/skills-integrate-mcp-with-copilot --dry-run
+
+# Create issues
+python create_issues.py --token YOUR_TOKEN --repo faizmodisweng/skills-integrate-mcp-with-copilot
+```
+
+Or use the GitHub CLI:
+```bash
+./create_issues.sh --dry-run  # Preview
+./create_issues.sh            # Create
+```
+
 ---
 
 &copy; 2025 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
