@@ -1,0 +1,52 @@
+[
+  {
+    "title": "Scaffold React SPA and routing",
+    "body": "## Description\nSet up a minimal React single-page application inside the repository to replace the current static frontend. The SPA should use Create React App (or Vite if preferred) and include routing via `react-router` with a basic Navbar and Footer components.\n\n## Acceptance Criteria\n- [ ] New `frontend/` directory created with a React app scaffold (or instructions to install dependencies)\n- [ ] App mounts at `/` and is served by the existing FastAPI static mount (or updated instructions provided)\n- [ ] Routes: `/` (Home), `/events`, `/clubs`, `/contact` are configured and render placeholder components\n- [ ] Basic Navbar and Footer components implemented and visible on all routes\n\n## Estimate\n3-5 points",
+    "labels": ["enhancement", "frontend", "setup"]
+  },
+  {
+    "title": "Implement Events page and `EventCard` component",
+    "body": "## Description\nAdd an `Events` route and implement a reusable `EventCard` React component that displays event image, title, community name, date range, attendee count, and RSVP button. Integrate it with the existing `GET /activities` API so event data is loaded from the backend.\n\n## Acceptance Criteria\n- [ ] `EventCard` component created with props for `title`, `community`, `image`, `fromDate`, `toDate`, `attendees`\n- [ ] `Events` page fetches data from `/activities` and maps activities to `EventCard` instances\n- [ ] RSVP button opens a small modal or triggers signup using the existing `POST /activities/{name}/signup?email=` endpoint\n- [ ] Component styling included (SCSS or CSS module) mimicking card layout\n\n## Estimate\n5-8 points",
+    "labels": ["enhancement", "frontend", "api-integration"]
+  },
+  {
+    "title": "Add Ticket component for printable tickets",
+    "body": "## Description\nCreate a stylized `Ticket` React component to present RSVP'd attendees with a printable ticket layout (avatar, attendee name, event, date, venue, ticket id). Provide a Print button to print the ticket view.\n\n## Acceptance Criteria\n- [ ] `Ticket` component implemented and styled\n- [ ] Tickets render a unique ticket id (client-generated is acceptable) and attendee info\n- [ ] A Print button triggers the browser print dialog with a clean ticket-only print stylesheet\n\n## Estimate\n3-5 points",
+    "labels": ["feature", "frontend", "ux"]
+  },
+  {
+    "title": "Clubs directory page",
+    "body": "## Description\nImplement `Clubs` route that shows a responsive grid of club tiles (image + short description + More Info action). Support a detail modal or separate club page when 'More Info' is clicked.\n\n## Acceptance Criteria\n- [ ] `Clubs` page lists clubs pulled from the backend (or a client-side seed list if backend extension is needed)\n- [ ] 'More Info' shows additional club details via modal or detail route\n\n## Estimate\n3 points",
+    "labels": ["enhancement", "frontend"]
+  },
+  {
+    "title": "Add React Query and replace manual fetches",
+    "body": "## Description\nIntroduce `react-query` (TanStack Query) to manage data fetching, caching, and background updates. Replace existing direct fetch logic in the React app with query hooks.\n\n## Acceptance Criteria\n- [ ] `react-query` added to dependencies and `QueryClientProvider` set up at app root\n- [ ] Activities fetching uses `useQuery` and signup/unregister use `useMutation` patterns\n- [ ] UI shows loading and error states consistent across pages\n\n## Estimate\n2-4 points",
+    "labels": ["improvement", "frontend", "tech-debt"]
+  },
+  {
+    "title": "Add Login UI (Google button + email form)",
+    "body": "## Description\nAdd a Login page with a Google sign-in button UI and an email/password sign-in form. This will be UI-only initially; later we can integrate OAuth or an auth backend.\n\n## Acceptance Criteria\n- [ ] Login page route `/login` with Google button and email form\n- [ ] Form validations (email format) and UI feedback for invalid inputs\n- [ ] Placeholder callback handlers or TODO comments for OAuth integration\n\n## Estimate\n2-3 points",
+    "labels": ["feature", "frontend", "auth"]
+  },
+  {
+    "title": "Contact page and contact form submission",
+    "body": "## Description\nImplement a Contact page within the SPA that contains a contact form (Name, Email, Subject, Message). Hook it to a simple API endpoint or store messages locally for now.\n\n## Acceptance Criteria\n- [ ] `/contact` route shows contact form\n- [ ] Form validates inputs and shows success/error messages after submit\n- [ ] (Optional) Add `POST /contact` API endpoint to the FastAPI app to receive messages\n\n## Estimate\n2-4 points",
+    "labels": ["enhancement", "frontend", "api-integration"]
+  },
+  {
+    "title": "Move static frontend assets into `frontend/` and update FastAPI static mount",
+    "body": "## Description\nWhen converting to a React SPA, move existing `src/static` files into a `frontend/` project or adjust the static mounting so production build files are served from the proper directory.\n\n## Acceptance Criteria\n- [ ] Clear directory layout and README update describing how to run frontend and backend for development and production\n- [ ] FastAPI static mount updated or documented to serve built files\n\n## Estimate\n1-2 points",
+    "labels": ["maintenance", "infra"]
+  },
+  {
+    "title": "Persist activities to a simple database (SQLite)",
+    "body": "## Description\nReplace in-memory `activities` store with a persistent storage layer (SQLite via SQLModel or SQLAlchemy). Add simple migrations or initialization code and update API handlers to use the DB.\n\n## Acceptance Criteria\n- [ ] Activities persisted in SQLite; server restarts keep data\n- [ ] Signup/unregister endpoints update the DB accordingly\n- [ ] Provide seed script or initial DB migration\n\n## Estimate\n5-8 points",
+    "labels": ["backend", "database", "enhancement"]
+  },
+  {
+    "title": "Protect signup/unregister endpoints with basic auth or token",
+    "body": "## Description\nAdd simple authentication or token protection for endpoints that modify activity signups to prevent abuse (initially basic token or API key stored in env).\n\n## Acceptance Criteria\n- [ ] Protected endpoints require a header or token; unauthorized requests return 401\n- [ ] README updated with usage instructions\n\n## Estimate\n2-4 points",
+    "labels": ["security", "backend"]
+  }
+]
