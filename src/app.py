@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
+import sqlite3
+from typing import Dict, Any
 
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
@@ -19,8 +21,7 @@ current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
-activities = {
+INITIAL_ACTIVITIES: Dict[str, Dict[str, Any]] = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
         "schedule": "Fridays, 3:30 PM - 5:00 PM",
@@ -77,6 +78,73 @@ activities = {
     }
 }
 
+DB_PATH = Path(__file__).parent.parent / "activities.db"
+
+def get_connection():
+    # Using a new connection per request scope keeps things simple for now
+    conn = sqlite3.connect(DB_PATH)
+    return conn
+
+def init_db():
+    first_time = not DB_PATH.exists()
+    conn = get_connection()
+    cur = conn.cursor()
+    # Create tables
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activities (
+            name TEXT PRIMARY KEY,
+            description TEXT NOT NULL,
+            schedule TEXT NOT NULL,
+            max_participants INTEGER NOT NULL
+        );
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS participants (
+            activity_name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            PRIMARY KEY(activity_name, email),
+            FOREIGN KEY(activity_name) REFERENCES activities(name) ON DELETE CASCADE
+        );
+        """
+    )
+
+    # Seed only if empty (not just first_time because db could exist but be cleared)
+    cur.execute("SELECT COUNT(*) FROM activities")
+    if cur.fetchone()[0] == 0:
+        for name, data in INITIAL_ACTIVITIES.items():
+            cur.execute(
+                "INSERT INTO activities(name, description, schedule, max_participants) VALUES (?, ?, ?, ?)",
+                (name, data["description"], data["schedule"], data["max_participants"]))
+            for p in data["participants"]:
+                cur.execute(
+                    "INSERT INTO participants(activity_name, email) VALUES (?, ?)",
+                    (name, p))
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def build_activity_dict() -> Dict[str, Dict[str, Any]]:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT name, description, schedule, max_participants FROM activities")
+    rows = cur.fetchall()
+    activities: Dict[str, Dict[str, Any]] = {}
+    for (name, description, schedule, max_participants) in rows:
+        cur.execute("SELECT email FROM participants WHERE activity_name = ?", (name,))
+        participants = [r[0] for r in cur.fetchall()]
+        activities[name] = {
+            "description": description,
+            "schedule": schedule,
+            "max_participants": max_participants,
+            "participants": participants,
+        }
+    conn.close()
+    return activities
+
 
 @app.get("/")
 def root():
@@ -85,48 +153,52 @@ def root():
 
 @app.get("/activities")
 def get_activities():
-    return activities
+    return build_activity_dict()
 
 
 @app.post("/activities/{activity_name}/signup")
 def signup_for_activity(activity_name: str, email: str):
     """Sign up a student for an activity"""
-    # Validate activity exists
-    if activity_name not in activities:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT max_participants FROM activities WHERE name = ?", (activity_name,))
+    row = cur.fetchone()
+    if row is None:
+        conn.close()
         raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Get the specific activity
-    activity = activities[activity_name]
-
-    # Validate student is not already signed up
-    if email in activity["participants"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Student is already signed up"
-        )
-
-    # Add student
-    activity["participants"].append(email)
+    max_participants = row[0]
+    # Check already signed up
+    cur.execute("SELECT 1 FROM participants WHERE activity_name = ? AND email = ?", (activity_name, email))
+    if cur.fetchone() is not None:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Student is already signed up")
+    # Enforce capacity
+    cur.execute("SELECT COUNT(*) FROM participants WHERE activity_name = ?", (activity_name,))
+    count = cur.fetchone()[0]
+    if count >= max_participants:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Activity is full")
+    cur.execute("INSERT INTO participants(activity_name, email) VALUES (?, ?)", (activity_name, email))
+    conn.commit()
+    conn.close()
     return {"message": f"Signed up {email} for {activity_name}"}
 
 
 @app.delete("/activities/{activity_name}/unregister")
 def unregister_from_activity(activity_name: str, email: str):
     """Unregister a student from an activity"""
+    conn = get_connection()
+    cur = conn.cursor()
     # Validate activity exists
-    if activity_name not in activities:
+    cur.execute("SELECT 1 FROM activities WHERE name = ?", (activity_name,))
+    if cur.fetchone() is None:
+        conn.close()
         raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Get the specific activity
-    activity = activities[activity_name]
-
-    # Validate student is signed up
-    if email not in activity["participants"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Student is not signed up for this activity"
-        )
-
-    # Remove student
-    activity["participants"].remove(email)
+    cur.execute("SELECT 1 FROM participants WHERE activity_name = ? AND email = ?", (activity_name, email))
+    if cur.fetchone() is None:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Student is not signed up for this activity")
+    cur.execute("DELETE FROM participants WHERE activity_name = ? AND email = ?", (activity_name, email))
+    conn.commit()
+    conn.close()
     return {"message": f"Unregistered {email} from {activity_name}"}
